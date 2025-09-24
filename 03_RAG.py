@@ -5,58 +5,77 @@ Created on Wed Sep 24 16:25:02 2025
 @author: tmlab
 """
 
-import pickle
+#%% 01. 임베딩 및 DB 로드
+# -*- coding: utf-8 -*-
+import os
+import requests
+from functools import partial
 
-# 'rb'는 바이너리 읽기 모드를 의미합니다.
-with open("df_sample_pages.pkl", "rb") as f:
-    
-    df_sample_pages = pickle.load(f)
-    
-    
-
-#%%
-
-from langchain.docstore.document import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+# LangChain 관련 라이브러리
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
-print("\n추출된 내용을 LangChain Document로 래핑합니다...")
-langchain_docs = []
+# ================================================================
+# 1. OpenRouter API 설정 및 호출 함수
+# ================================================================
 
-for idx, row in df_sample_pages.iterrows():
-    text = row['VQA_result_google/gemma-3-27b-it']
-    if type(text) == float : continue
+# ❗ 중요: OpenRouter API 키를 설정하세요.
+# os.environ["OPENROUTER_API_KEY"] = "sk-or-v1-..."
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+HEADERS = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "Content-Type": "application/json"
+}
+
+def ask_openrouter(question: str, model: str, temperature: float = 0.1) -> str:
+    """
+    OpenAI 호환 chat/completions 형식으로 텍스트 언어 모델에 질의합니다.
+    (RAG 파이프라인에 통합하기 위해 파라미터 순서를 조정했습니다.)
+    """
+    url = f"{OPENROUTER_BASE_URL}/chat/completions"
+    payload = {
+        "model": model,
+        "temperature": temperature,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise. Answer in Korean."
+            },
+            {
+                "role": "user",
+                "content": question # RAG 프롬프트가 포함된 전체 질문이 이곳으로 전달됩니다.
+            }
+        ]
+    }
     
-    # LangChain Document 객체 생성
-    doc_instance = Document(
-        page_content=text,
-        metadata={
-           "level1": row['level1'], 
-           "level2": row['level2'], 
-           "source": row['source'], 
-          
-            "page_number": row['page_number'], 
-        }
-    )
-    langchain_docs.append(doc_instance)
-    
-print(f"총 {len(langchain_docs)}개의 LangChain Document를 생성했습니다.")
+    if not OPENROUTER_API_KEY:
+        return "오류: OpenRouter API 키가 설정되지 않았습니다."
 
-print("첫 번째 Document 예시:", langchain_docs[0]) # 생성된 Document 확인용
+    try:
+        resp = requests.post(url, headers=HEADERS, json=payload, timeout=120)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"].strip()
+    except requests.exceptions.RequestException as e:
+        return f"API 요청 중 오류 발생: {e}"
+    except (KeyError, IndexError):
+        return f"API 응답 처리 중 오류 발생: {resp.text}"
 
-#%% 텍스트 분할, 임베딩 및 Vector Store 저장 (이전과 동일) ---
+#%% 02. retriever 준비 
 
-# 1. 텍스트 분할
-print("\nDocument를 청크로 분할합니다...")
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-split_documents = text_splitter.split_documents(langchain_docs)
-print(f"총 {len(split_documents)}개의 청크로 분할되었습니다.")
+# ================================================================
+# 2. Retriever 준비 (기존 코드)
+# ================================================================
 
-# 2. 임베딩
-print("임베딩 모델을 로드합니다 (GPU 사용)...")
+# 임베딩 모델 로드
+print("임베딩 모델을 로드합니다...")
 model_name = "nlpai-lab/KURE-v1"
-
-model_kwargs = {'device': 'cuda'}
+model_kwargs = {'device': 'cuda'} # GPU가 없다면 'cpu'로 변경
 encode_kwargs = {'normalize_embeddings': True}
 embeddings = HuggingFaceEmbeddings(
     model_name=model_name,
@@ -64,44 +83,73 @@ embeddings = HuggingFaceEmbeddings(
     encode_kwargs=encode_kwargs
 )
 
-#%% 벡터 저장 후 테스트
-from langchain_community.vectorstores import Chroma # <--- Chroma로 변경
-
+# ChromaDB 로드 및 Retriever 설정
 chroma_persist_dir = "chroma_db_test"
-
-# 3. 벡터 저장 (Chroma)
-print("벡터 저장을 시작합니다...")
-# <--- Chroma.from_documents로 변경, persist_directory 지정 ---
-vectorstore = Chroma.from_documents(
-    documents=split_documents, 
-    embedding=embeddings,
-    # collection_name="amore_bge_m3_v1",               # ← 새 이름
-    persist_directory=chroma_persist_dir
-)
-print(f"\n벡터 스토어를 '{chroma_persist_dir}' 폴더에 성공적으로 저장했습니다.")
-
-# --- 4단계: 저장된 데이터로 검색 테스트 ---
-
-# 1. 저장된 DB 다시 불러오기 (테스트를 위해)
 db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings)
+retriever = db.as_retriever(search_kwargs={"k": 3})
+print("DB를 Retriever로 설정했습니다.\n")
 
-# 2. 검색할 질문(쿼리) 설정
-# query = "올리브영의 사이트 클릭수는 얼마이고, 전년 대비 증가율은 어느 정도인가요?"
-query = '코로나19 이후 소비자 트렌드에 대해 알려줘'
-print(f"질문: {query}\n")
+#%% 03. 파이프라인 구성
 
-# 3. 유사도 높은 순서로 3개 문서 검색
-# similarity_search_with_score는 유사도 점수(낮을수록 유사)도 함께 반환
-searched_docs = db.similarity_search_with_score(query, k=3)
+# ================================================================
+# 3. RAG 파이프라인 구성 (Context 포함하도록 수정)
+# ================================================================
 
-# 4. 검색 결과 출력
-print("--- 검색 결과 ---")
-if not searched_docs:
-    print("검색 결과가 없습니다.")
-else:
-    for i, (doc, score) in enumerate(searched_docs):
-        print(f"[결과 {i+1}] (유사도 점수: {score:.4f})")
-        print(f"  - 내용: {doc.page_content[:1000]}...") # 내용 일부 출력
-        print(f"  - 출처: {doc.metadata.get('source', 'N/A')}")
-        print(f"  - 페이지: {doc.metadata.get('page_number', 'N/A')}")
-        print(f"  - OCR 적용 여부: {doc.metadata.get('ocr_applied', 'N/A')}\n")
+# 3-1. Prompt Template 및 LLM 준비 (이전과 동일)
+template = """
+주어진 맥락(Context) 정보를 사용하여 다음 질문에 답변해 주세요.
+맥락에서 답을 찾을 수 없다면, "제공된 정보만으로는 답변하기 어렵습니다."라고 답하세요. 답변은 한국어로 간결하게 작성해주세요.
+
+[맥락]
+{context}
+
+[질문]
+{question}
+"""
+prompt = ChatPromptTemplate.from_template(template)
+selected_model = "google/gemma-2-9b-it"
+llm = RunnableLambda(lambda p: ask_openrouter(question=p.to_string(), model=selected_model))
+
+# 3-2. ⭐️⭐️⭐️ 최종 체인 구성 (가장 큰 변경점) ⭐️⭐️⭐️
+
+# 검색된 문서(context)를 후속 체인에 전달하는 함수
+def format_docs(docs):
+    return "\n\n".join(f"--- 문서 {i+1} ---\n{doc.page_content}" for i, doc in enumerate(docs))
+
+# 1. 질문을 받아 문서를 검색하고, context와 question을 딕셔너리로 만듦
+setup_and_retrieval = RunnablePassthrough.assign(
+    context=lambda x: format_docs(retriever.invoke(x["question"]))
+)
+
+# 2. context와 question을 받아 답변을 생성하는 체인
+rag_chain_from_docs = (
+    prompt
+    | llm
+    | StrOutputParser()
+)
+
+# 3. 최종적으로 context와 answer를 함께 반환하는 체인
+final_chain = setup_and_retrieval | RunnablePassthrough.assign(
+    answer=rag_chain_from_docs
+)
+
+#%% 04.RAG 파이프라인 실행 (출력 방식 변경)
+
+# ================================================================
+# 4. RAG 파이프라인 실행 (출력 방식 변경)
+# ================================================================
+if __name__ == "__main__":
+    query = '코로나19 이후 소비자 트렌드에 대해 알려줘'
+    print(f"질문: {query}\n")
+    print("--- RAG 파이프라인 답변 생성 중 ---")
+
+    # 체인을 실행하면 'context'와 'answer'가 포함된 딕셔너리를 반환
+    result = final_chain.invoke({"question": query})
+
+    # 최종 답변 출력
+    print("\n✅ [최종 답변]")
+    print(result["answer"])
+
+    # 참고한 원문(Context) 출력
+    print("\n\n📚 [참고 원문]")
+    print(result["context"])
