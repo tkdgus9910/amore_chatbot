@@ -84,7 +84,8 @@ embeddings = HuggingFaceEmbeddings(
 )
 
 # ChromaDB 로드 및 Retriever 설정
-chroma_persist_dir = "chroma_db_test"
+
+chroma_persist_dir = "D:/OneDrive/프로젝트/250801_아모레/data/"
 db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings)
 retriever = db.as_retriever(search_kwargs={"k": 3})
 print("DB를 Retriever로 설정했습니다.\n")

@@ -67,7 +67,7 @@ embeddings = HuggingFaceEmbeddings(
 #%% 벡터 저장 후 테스트
 from langchain_community.vectorstores import Chroma # <--- Chroma로 변경
 
-chroma_persist_dir = "chroma_db_test"
+chroma_persist_dir = "D:/OneDrive/프로젝트/250801_아모레/data/"
 
 # 3. 벡터 저장 (Chroma)
 print("벡터 저장을 시작합니다...")
