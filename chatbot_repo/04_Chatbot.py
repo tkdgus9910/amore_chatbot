@@ -17,7 +17,7 @@ from langchain_core.output_parsers import StrOutputParser
 # -----------------------------
 # 🔧 기본 설정
 # -----------------------------
-DEFAULT_CHROMA_DIR = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
+DEFAULT_CHROMA_DIR = os.path.join(os.path.dirname(__file__), "chatbot_repo", "data", "chroma_db")
 DEFAULT_MODEL       = "google/gemma-2-9b-it"   # 03_RAG와 동일 계열
 EMBED_MODEL_NAME    = "nlpai-lab/KURE-v1"      # 03_RAG와 동일
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -430,3 +430,4 @@ if "retrieved_docs" in st.session_state:
     else:
         for i, d in enumerate(docs, start=1):
             render_doc_card(i, d)
+
