@@ -7,6 +7,8 @@ Created on Wed Sep 24 16:25:02 2025
 
 #%% 01. 임베딩 및 DB 로드
 # -*- coding: utf-8 -*-
+
+from pathlib import Path
 import os
 import requests
 from functools import partial
@@ -85,8 +87,16 @@ embeddings = HuggingFaceEmbeddings(
 
 # ChromaDB 로드 및 Retriever 설정
 
-chroma_persist_dir = r"C:\Users\PC1\amore_chatbot\chatbot_repo\data"
-db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings)
+#chroma_persist_dir = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
+# === 경로를 상대경로로 설정 (chatbot_repo/data) ===
+try:
+    BASE_DIR = Path(__file__).resolve().parent   # 이 파일이 있는 폴더 = chatbot_repo
+except NameError:                                 # Jupyter 등 __file__이 없을 때
+    BASE_DIR = Path.cwd()
+
+chroma_persist_dir = str(BASE_DIR / "data")       # ./chatbot_repo/data
+
+db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings, collection_name="amore_v1")
 retriever = db.as_retriever(search_kwargs={"k": 3})
 print("DB를 Retriever로 설정했습니다.\n")
 

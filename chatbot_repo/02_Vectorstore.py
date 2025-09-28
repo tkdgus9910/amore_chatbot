@@ -69,7 +69,18 @@ embeddings = HuggingFaceEmbeddings(
 #%% 벡터 저장 후 테스트
 from langchain_community.vectorstores import Chroma # <--- Chroma로 변경
 
-chroma_persist_dir = r"C:\Users\PC1\OneDrive\250801_아모레\chroma_db"
+#chroma_persist_dir = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
+from pathlib import Path
+
+# 이 파일(예: streamlit_rag_app.py)이 있는 폴더 = chatbot_repo
+try:
+    BASE_DIR = Path(__file__).resolve().parent
+except NameError:  # Jupyter/IPython 대비
+    BASE_DIR = Path.cwd()
+
+chroma_persist_dir = str(BASE_DIR / "data")  # ./chatbot_repo/data
+Path(chroma_persist_dir).mkdir(parents=True, exist_ok=True)
+print("Chroma dir:", chroma_persist_dir)
 
 # 3. 벡터 저장 (Chroma)
 print("벡터 저장을 시작합니다...")
@@ -77,6 +88,7 @@ print("벡터 저장을 시작합니다...")
 vectorstore = Chroma.from_documents(
     documents=split_documents, 
     embedding=embeddings,
+    collection_name="amore_v1",   # ← 직접 지정
     # collection_name="amore_bge_m3_v1",               # ← 새 이름
     persist_directory=chroma_persist_dir
 )
@@ -85,7 +97,7 @@ print(f"\n벡터 스토어를 '{chroma_persist_dir}' 폴더에 성공적으로 �
 # --- 4단계: 저장된 데이터로 검색 테스트 ---
 
 # 1. 저장된 DB 다시 불러오기 (테스트를 위해)
-db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings)
+db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings, collection_name="amore_v1")
 
 # 2. 검색할 질문(쿼리) 설정
 # query = "올리브영의 사이트 클릭수는 얼마이고, 전년 대비 증가율은 어느 정도인가요?"

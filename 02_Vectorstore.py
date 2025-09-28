@@ -5,10 +5,12 @@ Created on Wed Sep 24 16:25:02 2025
 @author: tmlab
 """
 
+import os
 import pickle
 
+
 # 'rb'는 바이너리 읽기 모드를 의미합니다.
-with open("df_sample_pages.pkl", "rb") as f:
+with open(r"C:\Users\PC1\OneDrive\기술인텔리전스\프로젝트\수행중\아모레자문_박상현\df_sample_pages.pkl", "rb") as f:
     
     df_sample_pages = pickle.load(f)
     
@@ -56,7 +58,7 @@ print(f"총 {len(split_documents)}개의 청크로 분할되었습니다.")
 print("임베딩 모델을 로드합니다 (GPU 사용)...")
 model_name = "nlpai-lab/KURE-v1"
 
-model_kwargs = {'device': 'cuda'}
+model_kwargs = {'device': 'cpu'}
 encode_kwargs = {'normalize_embeddings': True}
 embeddings = HuggingFaceEmbeddings(
     model_name=model_name,
@@ -67,7 +69,18 @@ embeddings = HuggingFaceEmbeddings(
 #%% 벡터 저장 후 테스트
 from langchain_community.vectorstores import Chroma # <--- Chroma로 변경
 
-chroma_persist_dir = "D:/OneDrive/프로젝트/250801_아모레/data/"
+#chroma_persist_dir = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
+from pathlib import Path
+
+# 이 파일(예: streamlit_rag_app.py)이 있는 폴더 = chatbot_repo
+try:
+    BASE_DIR = Path(__file__).resolve().parent
+except NameError:  # Jupyter/IPython 대비
+    BASE_DIR = Path.cwd()
+
+chroma_persist_dir = str(BASE_DIR / "data")  # ./chatbot_repo/data
+Path(chroma_persist_dir).mkdir(parents=True, exist_ok=True)
+print("Chroma dir:", chroma_persist_dir)
 
 # 3. 벡터 저장 (Chroma)
 print("벡터 저장을 시작합니다...")
@@ -75,6 +88,7 @@ print("벡터 저장을 시작합니다...")
 vectorstore = Chroma.from_documents(
     documents=split_documents, 
     embedding=embeddings,
+    collection_name="amore_v1",   # ← 직접 지정
     # collection_name="amore_bge_m3_v1",               # ← 새 이름
     persist_directory=chroma_persist_dir
 )
@@ -83,7 +97,7 @@ print(f"\n벡터 스토어를 '{chroma_persist_dir}' 폴더에 성공적으로 �
 # --- 4단계: 저장된 데이터로 검색 테스트 ---
 
 # 1. 저장된 DB 다시 불러오기 (테스트를 위해)
-db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings)
+db = Chroma(persist_directory=chroma_persist_dir, embedding_function=embeddings, collection_name="amore_v1")
 
 # 2. 검색할 질문(쿼리) 설정
 # query = "올리브영의 사이트 클릭수는 얼마이고, 전년 대비 증가율은 어느 정도인가요?"

@@ -6,7 +6,7 @@ import textwrap
 import html
 from urllib.parse import unquote
 import streamlit as st
-
+from pathlib import Path
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
@@ -17,7 +17,15 @@ from langchain_core.output_parsers import StrOutputParser
 # -----------------------------
 # 🔧 기본 설정
 # -----------------------------
-DEFAULT_CHROMA_DIR = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
+# === 경로를 상대경로로 설정 (chatbot_repo/data) ===
+try:
+    BASE_DIR = Path(__file__).resolve().parent   # 이 파일이 있는 폴더 = chatbot_repo
+except NameError:                                 # Jupyter 등 __file__이 없을 때
+    BASE_DIR = Path.cwd()
+
+DEFAULT_CHROMA_DIR = str(BASE_DIR / "data")       # ./chatbot_repo/data
+
+#DEFAULT_CHROMA_DIR = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
 DEFAULT_MODEL       = "google/gemma-2-9b-it"   # 03_RAG와 동일 계열
 EMBED_MODEL_NAME    = "nlpai-lab/KURE-v1"      # 03_RAG와 동일
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -153,7 +161,7 @@ def load_embeddings(model_name: str, device_choice: str):
 # 🔧 UnhashableParamError 대응: 해시 불가 객체는 인자명 앞에 '_'로 전달
 @st.cache_resource(show_spinner=True)
 def load_vectorstore(persist_dir: str, _embeddings):
-    return Chroma(persist_directory=persist_dir, embedding_function=_embeddings)
+    return Chroma(persist_directory=persist_dir, embedding_function=_embeddings, collection_name="amore_v1")
 
 @st.cache_resource(show_spinner=True)
 def build_chain(model_name: str, temperature: float, base_url: str, api_key: str):
