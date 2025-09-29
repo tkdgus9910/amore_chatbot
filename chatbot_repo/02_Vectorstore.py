@@ -7,11 +7,11 @@ Created on Wed Sep 24 16:25:02 2025
 
 import os
 import pickle
-
+from pathlib import Path
 
 DEFAULT_PKL = Path(__file__).parent / "data" / "df_sample_pages.pkl"
 with open(DEFAULT_PKL, "rb") as f:
-    df = pickle.load(f)
+    df_sample_pages = pickle.load(f)
     
     
 
