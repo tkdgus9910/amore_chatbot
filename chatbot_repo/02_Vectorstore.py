@@ -65,20 +65,21 @@ embeddings = HuggingFaceEmbeddings(
     encode_kwargs=encode_kwargs
 )
 
+
 #%% 벡터 저장 후 테스트
 from langchain_community.vectorstores import Chroma # <--- Chroma로 변경
 
 #chroma_persist_dir = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
+
 from pathlib import Path
+import tempfile
 
-# 이 파일(예: streamlit_rag_app.py)이 있는 폴더 = chatbot_repo
-try:
-    BASE_DIR = Path(__file__).resolve().parent
-except NameError:  # Jupyter/IPython 대비
-    BASE_DIR = Path.cwd()
+# 컨테이너 임시폴더(/tmp) 기반
+BASE_DIR = Path(tempfile.gettempdir())
 
-chroma_persist_dir = str(BASE_DIR / "data")  # ./chatbot_repo/data
+chroma_persist_dir = str(BASE_DIR / "chroma_db")  # /tmp/chroma_db
 Path(chroma_persist_dir).mkdir(parents=True, exist_ok=True)
+
 print("Chroma dir:", chroma_persist_dir)
 
 # 3. 벡터 저장 (Chroma)
