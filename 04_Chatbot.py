@@ -23,7 +23,6 @@ try:
 except NameError:                                 # Jupyter 등 __file__이 없을 때
     BASE_DIR = Path.cwd()
 
-
 # Path 객체로 경로 정의
 DEFAULT_CHROMA_DIR_PATH = BASE_DIR / "data"
 
@@ -38,6 +37,7 @@ DEFAULT_CHROMA_DIR = str(DEFAULT_CHROMA_DIR_PATH)
 #DEFAULT_CHROMA_DIR = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
 DEFAULT_MODEL       = "google/gemma-2-9b-it"   # 03_RAG와 동일 계열
 EMBED_MODEL_NAME    = "nlpai-lab/KURE-v1"      # 03_RAG와 동일
+
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 SYSTEM_PROMPT = """You are a precise RAG assistant. Use ONLY the provided context.
