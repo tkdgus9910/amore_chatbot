@@ -9,10 +9,9 @@ import os
 import pickle
 
 
-# 'rb'는 바이너리 읽기 모드를 의미합니다.
-with open(r"C:\Users\PC1\OneDrive\기술인텔리전스\프로젝트\수행중\아모레자문_박상현\df_sample_pages.pkl", "rb") as f:
-    
-    df_sample_pages = pickle.load(f)
+DEFAULT_PKL = Path(__file__).parent / "data" / "df_sample_pages.pkl"
+with open(DEFAULT_PKL, "rb") as f:
+    df = pickle.load(f)
     
     
 
