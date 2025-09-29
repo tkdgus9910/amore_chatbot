@@ -23,7 +23,17 @@ try:
 except NameError:                                 # Jupyter 등 __file__이 없을 때
     BASE_DIR = Path.cwd()
 
-DEFAULT_CHROMA_DIR = str(BASE_DIR / "data")       # ./chatbot_repo/data
+
+# Path 객체로 경로 정의
+DEFAULT_CHROMA_DIR_PATH = BASE_DIR / "data"
+
+# ✨✨ 이 부분을 추가하세요! ✨✨
+# ./data 디렉터리가 존재하지 않으면, 자동으로 생성합니다.
+# 부모 디렉터리가 없어도 만들어주고(parents=True), 이미 있어도 오류를 내지 않습니다(exist_ok=True).
+DEFAULT_CHROMA_DIR_PATH.mkdir(parents=True, exist_ok=True)
+
+# 실제 사용할 때는 문자열로 변환
+DEFAULT_CHROMA_DIR = str(DEFAULT_CHROMA_DIR_PATH)
 
 #DEFAULT_CHROMA_DIR = r"C:\Users\PC1\OneDrive\프로젝트\250801_아모레\chroma_db"
 DEFAULT_MODEL       = "google/gemma-2-9b-it"   # 03_RAG와 동일 계열
