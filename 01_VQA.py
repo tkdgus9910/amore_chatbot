@@ -113,7 +113,6 @@ if __name__ == "__main__":
         sample_data['direct_text'] = sample_data['direct_text'][:100] + "..." # 텍스트가 너무 길면 잘라서 표시
         print(json.dumps(sample_data, indent=4, ensure_ascii=False))
         
-
 df = pd.DataFrame(all_data)
 
 #%% 02. EDA - 문서 별 텍스트 길이 분포 확인 
@@ -350,6 +349,7 @@ for file, pages in rep_pages.items() :
 df_sample_ = df_sample.drop_duplicates('source')
 file_directory_dict = dict(zip(df_sample_['source'], df_sample_['file_path']))
 
+df_sample_pages = df
 
 #%% 05. iteration
 
