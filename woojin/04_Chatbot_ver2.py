@@ -750,7 +750,7 @@ if st.session_state.get("answer"):
     st.markdown(f'<div class="answer-card">{st.session_state["answer"]}</div>', unsafe_allow_html=True)
 
 # -----------------------------
-# 📚 참고 문서 표시 (요약>본문>파일명 우선 + 최신순)
+# 📚 참고 문서 표시 (최신순)
 # -----------------------------
 with guard("참고 문서 렌더링 중 오류가 발생했습니다."):
     if "retrieved_docs" in st.session_state:
@@ -759,11 +759,12 @@ with guard("참고 문서 렌더링 중 오류가 발생했습니다."):
         if not docs:
             st.info("검색 결과가 없습니다. (DB가 비어있거나, 쿼리와 문서가 덜 유사할 수 있어요)")
         else:
-            # (rank asc, date desc). rank: 0(summary) 1(text) 2(source) 3(none)
+            # (date desc). 오직 날짜 최신순으로 정렬
             def _sort_key(d):
-                rank, dt = get_doc_date_info(d)
-                ts = -dt.timestamp() if dt else 0
-                return (rank, ts)
+                _, dt = get_doc_date_info(d)  # rank 정보는 사용하지 않음
+                ts = -dt.timestamp() if dt else 0  # 날짜가 최신일수록 큰 timestamp 값을 가지므로, 음수로 만들어 오름차순 정렬 (결과적으로 내림차순)
+                return ts
+
             docs_sorted = sorted(docs, key=_sort_key)
 
             for i, d in enumerate(docs_sorted, start=1):
