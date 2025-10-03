@@ -417,6 +417,10 @@ if __name__ == "__main__":
             df_sample_pages.loc[mask, 'VQA_result_{}'.format(MODEL)] = list(result.values())  # result가 스칼라면 전 행에 브로드캐스트
 
 
+#%%
+
+df_sample_pages['text'] = df_sample_pages.apply(lambda x : x['VQA_result_google/gemma-3-27b-it'] if x['multimodal_applied'] == True
+                                                else x['direct_text'], axis = 1)
 #%% 06. 저장
 
 import pickle

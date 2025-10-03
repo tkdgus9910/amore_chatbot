@@ -77,7 +77,7 @@ def ask_openrouter(question: str, model: str, temperature: float = 0.1) -> str:
 # 임베딩 모델 로드
 print("임베딩 모델을 로드합니다...")
 model_name = "nlpai-lab/KURE-v1"
-model_kwargs = {'device': 'cpu'} # GPU가 없다면 'cpu'로 변경
+model_kwargs = {'device': 'cuda'} # GPU가 없다면 'cpu'로 변경
 encode_kwargs = {'normalize_embeddings': True}
 embeddings = HuggingFaceEmbeddings(
     model_name=model_name,
@@ -94,11 +94,12 @@ import tempfile
 from langchain_community.vectorstores import Chroma
 
 # 컨테이너 임시폴더(/tmp) 기반
-BASE_DIR = Path(tempfile.gettempdir())
+# BASE_DIR = Path(tempfile.gettempdir())
 
-chroma_persist_dir = str(BASE_DIR / "chroma_db")   # /tmp/chroma_db
-Path(chroma_persist_dir).mkdir(parents=True, exist_ok=True)
+# chroma_persist_dir = str(BASE_DIR / "chroma_db")   # /tmp/chroma_db
+# Path(chroma_persist_dir).mkdir(parents=True, exist_ok=True)
 
+chroma_persist_dir = "chroma_db_test"
 db = Chroma(
     persist_directory=chroma_persist_dir,
     embedding_function=embeddings,
