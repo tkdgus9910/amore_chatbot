@@ -32,6 +32,7 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 
+
 @contextmanager
 def guard(title: str = "예기치 못한 오류가 발생했습니다."):
     """에러를 패널로 보여주고 안전 종료(st.stop)하는 컨텍스트"""
@@ -40,9 +41,13 @@ def guard(title: str = "예기치 못한 오류가 발생했습니다."):
     except SystemExit:
         raise
     except Exception as e:
+        # ✅ Streamlit 재실행용 예외는 그냥 통과시켜야 함
+        if e.__class__.__name__ == "RerunException":
+            raise
         st.error(title)
         st.exception(e)
         st.stop()
+
 
 # -----------------------------
 # 🔧 기본 설정
@@ -629,11 +634,11 @@ if clear_btn:
     st.session_state["answer"] = ""
     st.session_state["retrieved_docs"] = []
     st.session_state["user_query"] = ""
-    st.rerun()
+    st.session_state["_do_rerun"] = True
 
 if clear_hist:
     st.session_state["history"] = []
-    st.rerun()
+    st.session_state["_do_rerun"] = True
 
 def make_suggestions(q: str, docs):
     suggestions = []
@@ -666,9 +671,10 @@ with st.container():
     for i, s in enumerate(suggestions):
         if s is None:
             continue
+        # 추천 질문 버튼
         if scols[i].button(f"🧩 {s}", key=f"sugg_{i}"):
             st.session_state["pending_query"] = s
-            st.rerun()
+            st.session_state["_do_rerun"] = True
 
 with guard("검색/답변 생성 중 오류가 발생했습니다."):
     if run_btn:
@@ -740,7 +746,8 @@ with guard("검색/답변 생성 중 오류가 발생했습니다."):
         hist = st.session_state["history"]
         hist.insert(0, {"q": query, "a": answer_text, "k": top_k, "sources": list(dict.fromkeys(src_list))[:5]})
         st.session_state["history"] = hist[:5]
-        st.rerun()
+        st.session_state["_do_rerun"] = True    # ✅ 플래그만
+        
 
 # -----------------------------
 # 🧠 답변 표시
@@ -775,3 +782,7 @@ try:
     gc.collect()
 except Exception:
     pass
+
+# ✅ 여기서만 실제 재실행 트리거
+if st.session_state.pop("_do_rerun", False):
+    st.rerun()
