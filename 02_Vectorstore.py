@@ -19,6 +19,7 @@ from langchain.docstore.document import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 
+
 print("\n추출된 내용을 LangChain Document로 래핑합니다...")
 langchain_docs = []
 
@@ -67,7 +68,7 @@ embeddings = HuggingFaceEmbeddings(
 #%% 벡터 저장 후 테스트
 from langchain_community.vectorstores import Chroma # <--- Chroma로 변경
 
-chroma_persist_dir = "chroma_db_test"
+chroma_persist_dir = "chroma_db_V1"
 
 # 3. 벡터 저장 (Chroma)
 print("벡터 저장을 시작합니다...")
@@ -107,31 +108,3 @@ else:
         print(f"  - OCR 적용 여부: {doc.metadata.get('ocr_applied', 'N/A')}\n")
         
 #%%
-import plotly.express as px
-
-temp = df_sample_pages.groupby(['level1', 'level2'])['text'].count()
-temp = temp.reset_index(drop= 0 )
-#%%
-temp = df_sample_pages.groupby(['level1', 'level2'])['text_recognized'].mean()
-temp = temp.reset_index(drop= 0 )
-
-
-#%%
-
-fig = px.sunburst(temp, path=['level1', 'level2'], values='text',
-                  color= 'text',
-                  color_continuous_scale=px.colors.sequential.Sunset  # 더 밝고 대비가 좋은 팔레트 사용
-                  # color_continuous_scale=px.colors.sequential.Viridis  # 더 밝고 대비가 좋은 팔레트 사용
-                 )
-
-# 차트의 텍스트 정보와 폰트 크기를 업데이트합니다.
-fig.update_traces(
-    textinfo='label+percent root',
-    insidetextfont_size=24,
-    # insidetextfont_color='black'
-)
-# 생성된 차트를 'sunburst_chart.html' 파일로 저장합니다.
-# 이 파일은 코드를 실행한 폴더에 저장되며, 웹 브라우저에서 열어 확인할 수 있습니다.
-fig.write_html("sunburst_chart.html")
-
-

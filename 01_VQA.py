@@ -421,6 +421,7 @@ if __name__ == "__main__":
 
 df_sample_pages['text'] = df_sample_pages.apply(lambda x : x['VQA_result_google/gemma-3-27b-it'] if x['multimodal_applied'] == True
                                                 else x['direct_text'], axis = 1)
+
 #%% 06. 저장
 
 import pickle
@@ -437,3 +438,7 @@ for col in df_sample_pages.columns:
         df_sample_pages[col] = df_sample_pages[col].str.replace("\x01", " ", regex=False)
 
 df_sample_pages.to_excel(output_directory + "result_test.xlsx")
+
+
+#%%
+
